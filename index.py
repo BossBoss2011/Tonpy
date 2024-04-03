@@ -1,3 +1,18 @@
+from time import sleep
+import os
+
+import Exceptions
+
+def clear_screen(platform: str = "don't steal.") -> None:
+    if platform == "windows":
+        os.system("cls")
+    elif platform == "linux":
+        os.system("clear")
+    elif platform in ["mac", "ChromeOS"]:
+        raise Exceptions.Platform_Error("Unsupported platform.")
+    else:
+        raise Exceptions.Platform_Error("Platform preset not found.")
+
 def display(*text, sep: str | None = " ", End="\n") -> None:
     nr = 0
     length = len(text)
@@ -10,6 +25,10 @@ def display(*text, sep: str | None = " ", End="\n") -> None:
         else:
             print(End, end="")
             return
+        
+def main_loop():
+    while True:
+        sleep(60)
 
 def read(prompt: str = "") -> str:
     return input(prompt)
@@ -21,12 +40,11 @@ def Aread(prompt: str = "") -> str | int | bool:
         pass
     return answer
 
-class No_STOP_Error(Exception):
-    def __init__(self):
-        super().__init__("No STOP provided.")
+def wait_until(expression: str = 'False', is_bool: bool = True, timeout: float = 0.50) -> None:
+    while eval(expression) != is_bool:
+        sleep(timeout)
 
-STOP = None
-
+# Shortcuts
 allowed = {}
 allowed['display'] = display
 allowed['show'] = display
@@ -38,12 +56,29 @@ allowed['auto_read'] = Aread
 allowed['read_auto'] = Aread
 allowed['nr'] = int
 allowed['number'] = int
+allowed['integer'] = int
 allowed['true'] = True
 allowed['false'] = False
 allowed['maybe'] = bool
+allowed['boolean'] = bool
 allowed['null'] = None
 allowed['mhm'] = True # Spoiled Children Only
 allowed['hmh'] = False # Spoiled Children Only
+allowed['sleep'] = sleep
+allowed['wait'] = sleep
+allowed['wait_until'] = wait_until
+allowed['waituntil'] = wait_until
+allowed['main_loop'] = main_loop
+allowed['mainloop'] = main_loop
+allowed['main'] = main_loop
+allowed['m_loop'] = main_loop
+allowed['str'] = str
+allowed['string'] = str
+allowed['text'] = str
+allowed['txt'] = str
+allowed['clear'] = clear_screen
+allowed['cls'] = clear_screen
+allowed['clear_screen'] = clear_screen
 
 file = input(">> ")
 with open(file, 'r') as f:
@@ -52,13 +87,27 @@ with open(file, 'r') as f:
 lines = content.split("\n")
 start_end = False
 line_NR = 0
-if lines[0] == "START":
+#if lines[0] == "START":
+#    start_end = True
+if "START" in lines:
     start_end = True
-if start_end and (lines[-1] != "END" and lines[-1] != "STOP"):
-    raise No_STOP_Error()
+
+if start_end:
+    if not "END" in lines and not "STOP" in lines:
+        raise Exceptions.No_STOP_Error()
+
+run = False
+if start_end == False:
+    run = True
+raise Exceptions.Dont_Steal()
 for line in lines:
-    line_NR += 1
-    if line_NR == 1 and start_end:
-        next
-    else:
-        exec(line, globals(), allowed)
+    if run:
+        line_NR += 1
+        if line == "START" and start_end:
+            next
+        else:
+            if start_end and (line == "END" or line == "STOP"):
+                exit(1)
+            exec(line, globals(), allowed)
+    elif line == "START" and start_end:
+        run = True
